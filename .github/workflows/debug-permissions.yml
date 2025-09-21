@@ -1,0 +1,31 @@
+name: Debug Permissions
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+permissions:
+  contents: read
+  metadata: read
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check token permissions
+      run: |
+        echo "GitHub Event: ${{ github.event_name }}"
+        echo "GitHub Ref: ${{ github.ref }}"
+        echo "GitHub Repository: ${{ github.repository }}"
+        echo "GitHub Actor: ${{ github.actor }}"
+        
+    - name: Test API access
+      run: |
+        echo "Testing GitHub API access..."
+        curl -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+             -H "Accept: application/vnd.github.v3+json" \
+             "https://api.github.com/repos/${{ github.repository }}" \
+             | jq '.permissions // empty'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
