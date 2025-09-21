@@ -1,0 +1,166 @@
+name: Build and Release ShiftSwitch
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+        
+    - name: Show Xcode version
+      run: xcodebuild -version
+      
+    - name: Clean build directory
+      run: |
+        rm -rf build
+        mkdir -p build
+        
+    - name: Build ShiftSwitch
+      run: |
+        xcodebuild -scheme ShiftSwitch \
+          -configuration Release \
+          -derivedDataPath ./build \
+          clean build \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+          
+    - name: Verify build output
+      run: |
+        ls -la ./build/Build/Products/Release/
+        file ./build/Build/Products/Release/ShiftSwitch.app/Contents/MacOS/ShiftSwitch
+        
+    - name: Create DMG
+      run: |
+        # 安装 create-dmg
+        brew install create-dmg
+        
+        # 创建 DMG 安装包
+        create-dmg \
+          --volname "ShiftSwitch" \
+          --volicon "./ShiftSwitch/Assets.xcassets/AppIcon.appiconset/icon_256x256.png" \
+          --window-pos 200 120 \
+          --window-size 600 400 \
+          --icon-size 100 \
+          --icon "ShiftSwitch.app" 200 190 \
+          --hide-extension "ShiftSwitch.app" \
+          --app-drop-link 400 190 \
+          "./build/ShiftSwitch.dmg" \
+          "./build/Build/Products/Release/ShiftSwitch.app" || \
+        create-dmg \
+          --volname "ShiftSwitch" \
+          --window-pos 200 120 \
+          --window-size 600 400 \
+          --icon-size 100 \
+          --app-drop-link 400 190 \
+          "./build/ShiftSwitch.dmg" \
+          "./build/Build/Products/Release/ShiftSwitch.app"
+          
+    - name: Create ZIP archive
+      run: |
+        cd ./build/Build/Products/Release/
+        zip -r ../../../../build/ShiftSwitch.zip ShiftSwitch.app
+        cd ../../../../
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ShiftSwitch-${{ github.sha }}
+        path: |
+          ./build/ShiftSwitch.dmg
+          ./build/ShiftSwitch.zip
+        retention-days: 30
+        
+    - name: Get version info
+      id: version
+      run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+        else
+          VERSION="dev-$(date +'%Y%m%d')-${GITHUB_SHA::8}"
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION"
+        
+    - name: Create Release (on tag)
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        name: ShiftSwitch ${{ steps.version.outputs.VERSION }}
+        body: |
+          ## ShiftSwitch ${{ steps.version.outputs.VERSION }}
+          
+          ### 功能特点
+          - ✅ **Shift键切换输入法**：单独按下左或右Shift键快速切换中英文输入法
+          - ✅ **Caps Lock纯大小写**：Caps Lock键只控制英文字母大小写，不切换输入法
+          - ✅ **智能输入法识别**：自动检测系统已启用的中文和英文输入法
+          - ✅ **后台运行**：状态栏菜单，低资源占用
+          - ✅ **权限管理**：自动检测和申请辅助功能权限
+          
+          ### 系统要求
+          - macOS 15.3 (Sequoia) 或更高版本
+          - Apple Silicon 或 Intel 处理器
+          
+          ### 安装方法
+          1. 下载 `ShiftSwitch.dmg` 文件
+          2. 双击打开，将 ShiftSwitch.app 拖拽到应用程序文件夹
+          3. 首次运行时授予辅助功能权限
+          
+          ### 使用方法
+          - 单独按下Shift键（左或右）切换中英文输入法
+          - 按下Caps Lock键只切换英文字母大小写
+          - 点击状态栏⌨️图标查看菜单选项
+          
+          如有问题请查看 [调试指南](https://github.com/${{ github.repository }}/blob/main/调试指南.md)
+          
+        files: |
+          ./build/ShiftSwitch.dmg
+          ./build/ShiftSwitch.zip
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+  notarize:
+    runs-on: macos-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: ShiftSwitch-${{ github.sha }}
+        path: ./build/
+        
+    - name: Notarize app (if certificates available)
+      if: env.APPLE_ID != '' && env.APPLE_PASSWORD != ''
+      run: |
+        echo "公证功能需要Apple开发者账户和证书"
+        echo "如需公证，请设置以下GitHub Secrets:"
+        echo "- APPLE_ID: Apple ID"
+        echo "- APPLE_PASSWORD: App-specific password"
+        echo "- APPLE_TEAM_ID: Team ID"
+        echo "- DEVELOPER_ID_APPLICATION: Developer ID Application certificate"
+      env:
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
