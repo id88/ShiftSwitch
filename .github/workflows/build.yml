@@ -50,6 +50,35 @@ jobs:
         ls -la ./build/Build/Products/Release/
         file ./build/Build/Products/Release/ShiftSwitch.app/Contents/MacOS/ShiftSwitch
         
+    - name: Self-sign application (Ad-hoc)
+      run: |
+        echo "🔐 开始进行ad-hoc代码签名..."
+        APP_PATH="./build/Build/Products/Release/ShiftSwitch.app"
+        
+        if [ -d "$APP_PATH" ]; then
+          # 显示原始签名状态
+          echo "📋 原始签名状态:"
+          codesign -dv "$APP_PATH" || echo "未签名"
+          
+          # 执行ad-hoc签名
+          codesign --force --deep --sign - "$APP_PATH"
+          echo "✅ Ad-hoc签名完成"
+          
+          # 验证签名
+          echo "🔍 验证签名:"
+          codesign --verify --verbose "$APP_PATH"
+          
+          # 显示签名信息
+          echo "📜 签名信息:"
+          codesign -dv "$APP_PATH"
+          
+          echo "✅ 应用已完成ad-hoc签名，可以在本地macOS上运行"
+        else
+          echo "❌ 未找到应用文件: $APP_PATH"
+          ls -la ./build/Build/Products/Release/
+          exit 1
+        fi
+        
     - name: Create DMG
       run: |
         # 安装 create-dmg

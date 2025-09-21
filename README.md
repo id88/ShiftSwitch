@@ -33,6 +33,10 @@
 1. 前往 [Releases](https://github.com/id88/ShiftSwitch/releases) 页面
 2. 下载最新版本的 `ShiftSwitch.dmg`
 3. 双击打开，将应用拖拽到应用程序文件夹
+
+> ⚠️ **重要提示**: 由于应用未经过 Apple 官方签名，首次运行时 macOS 可能显示"应用已损坏"警告。
+> 
+> **解决方法**: 右键点击应用选择"打开"，或查看 [代码签名指南](.github/CODE_SIGNING.md) 了解详细解决方案。
 4. 首次运行时授予辅助功能权限
 
 ### 自动构建版本
@@ -131,6 +135,15 @@ sudo cp -R ./build/Build/Products/Release/ShiftSwitch.app /Applications/
 - **资源释放**：应用退出时清理所有资源
 
 ## 故障排除
+
+### 应用提示"已损坏"无法打开
+这是因为应用未经过Apple官方签名导致的macOS安全限制。
+
+**解决方法**:
+1. **右键打开**: 右键点击应用选择"打开"（推荐）
+2. **自动修复脚本**: 下载并运行 `scripts/fix-codesign.sh`
+3. **手动命令**: `sudo xattr -rd com.apple.quarantine /Applications/ShiftSwitch.app`
+4. **详细指南**: 查看 [代码签名指南](.github/CODE_SIGNING.md)
 
 ### 应用无法启动
 1. 检查macOS版本是否符合要求
