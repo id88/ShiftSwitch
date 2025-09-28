@@ -554,6 +554,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         
         menu.addItem(NSMenuItem.separator())
         
+        // 关于菜单项
+        let aboutMenuItem = NSMenuItem(title: "关于ShiftSwitch", action: #selector(showAbout), keyEquivalent: "")
+        aboutMenuItem.target = self
+        menu.addItem(aboutMenuItem)
+        
+        menu.addItem(NSMenuItem.separator())
+        
         // 退出菜单项
         let quitMenuItem = NSMenuItem(title: "退出", action: #selector(quitApp), keyEquivalent: "q")
         quitMenuItem.target = self
@@ -596,6 +603,38 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     @objc private func reinitializeMonitoring() {
         DebugLogger.shared.info("📱 用户请求重新初始化监听")
         keyboardMonitor?.reinitializeMonitoring()
+    }
+    
+    /// 显示关于对话框
+    @objc private func showAbout() {
+        let alert = NSAlert()
+        alert.messageText = "关于ShiftSwitch"
+        
+        let informativeText = """
+        ShiftSwitch v1.0.3
+        
+        
+        Github地址：
+        https://github.com/id88/ShiftSwitch
+        
+        © 2025 MIT License
+        """
+        
+        alert.informativeText = informativeText
+        alert.alertStyle = .informational
+        
+        // 添加按钮
+        alert.addButton(withTitle: "确定")
+        alert.addButton(withTitle: "访问GitHub")
+        
+        let response = alert.runModal()
+        
+        // 如果用户点击了"访问GitHub"按钮
+        if response == .alertSecondButtonReturn {
+            if let url = URL(string: "https://github.com/id88/ShiftSwitch") {
+                NSWorkspace.shared.open(url)
+            }
+        }
     }
     
     /// 退出应用
