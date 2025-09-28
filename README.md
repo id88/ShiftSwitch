@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/github/license/id88/ShiftSwitch)](LICENSE)
 [![macOS](https://img.shields.io/badge/macOS-15.3%2B-blue)](https://www.apple.com/macos/)
 
-一个高效的macOS键盘输入法切换工具，让您通过单独按下Shift键来切换中英文输入法，同时修正Caps Lock键的行为。
+让macOS像Windows一样的，通过单独按下Shift键来切换中英文输入法，同时修正Caps Lock键的行为。
 
 > **🎯 核心功能**：Shift键切换输入法 + Caps Lock纯大小写控制
 
